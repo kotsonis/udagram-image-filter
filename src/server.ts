@@ -48,15 +48,14 @@ import fetch from 'node-fetch';
     try {
       const response = await fetch(image_url, {method: 'HEAD'});
       if (response.ok) { // got answer 200~300
-        let files = filterImageFromURL(image_url)
-                    .then((file_list) => {
-                      console.log(`got back the following ${file_list}`)
-                      res.status(200).send({message: `thank you for doing business`})
-                    })
-                    .catch((error)=> {
-                      res.status(400).send({ message: `Something went wrong with processing the image at ${image_url}` });
-                    });
-        
+        filterImageFromURL(image_url)
+        .then((file_list) => {
+          console.log(`got back the following ${file_list}`)
+          res.status(200).sendFile(file_list)
+        })
+        .catch((error)=> {
+          res.status(400).send({ message: `Something went wrong with processing the image at ${image_url}` });
+        });
       } else { // response was note from 200 till 300
         console.log(`got response ${response.status}, ${response.statusText}`)
         res.status(400).send({ message: `Image url not ok. Got ${response.status}, ${response.statusText}` });
