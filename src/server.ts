@@ -32,8 +32,6 @@ async function check_image_url(image_url:any) {
   // Use the body parser middleware for post requests
   app.use(bodyParser.json());
   
-  // redirect route to our API
-  
   // @TODO1 IMPLEMENT A RESTFUL ENDPOINT
   // GET /filteredimage?image_url={{URL}}
   // endpoint to filter an image from a public url.
@@ -49,8 +47,7 @@ async function check_image_url(image_url:any) {
   //   the filtered image file [!!TIP res.sendFile(filteredpath); might be useful]
 
   /**************************************************************************** */
-  // new test
-  //! END @TODO1
+
   app.get('/filteredimage', async (req: Request, res: Response) => {
     let { image_url } = req.query;
     console.log(`got a request to process image at url:${image_url}`);
@@ -61,10 +58,13 @@ async function check_image_url(image_url:any) {
         deleteLocalFiles([processed_image])
       })
     } catch (e) {
+      // catch any exceptions from check_image_url, filterImageFromURL, and deleteLocalFiles (amongst others)
       res.status(422).send({message:`${e}`})
     }
       
   });
+  //! END @TODO1
+
   // Root Endpoint
   // Displays a simple message to the user
   app.get( "/", async ( req, res ) => {
