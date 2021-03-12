@@ -1,6 +1,25 @@
 import express from 'express';
+import { Router, Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import {filterImageFromURL, deleteLocalFiles} from './util/util';
+import { url } from 'inspector';
+import fetch from 'node-fetch'; 
+import { reject, resolve } from 'bluebird';
+import { checkServerIdentity } from 'tls';
+
+
+// declare function to check if image_url is valid
+async function check_image_url(image_url:any) {
+    let response = await fetch(image_url, { method: 'HEAD' })
+    if (response.ok) {
+      return image_url
+    } else {
+      console.log(`tried ${image_url}, Got ${response.status}, ${response.statusText}`)
+      throw new Error(`Invalid image_url ${image_url}: ${response.status}, ${response.statusText}`);
+    }
+}
+
+// add for checking if provided url exists
 
 (async () => {
 
@@ -12,7 +31,9 @@ import {filterImageFromURL, deleteLocalFiles} from './util/util';
   
   // Use the body parser middleware for post requests
   app.use(bodyParser.json());
-
+  
+  // redirect route to our API
+  
   // @TODO1 IMPLEMENT A RESTFUL ENDPOINT
   // GET /filteredimage?image_url={{URL}}
   // endpoint to filter an image from a public url.
@@ -30,7 +51,20 @@ import {filterImageFromURL, deleteLocalFiles} from './util/util';
   /**************************************************************************** */
   // new test
   //! END @TODO1
-  
+  app.get('/filteredimage', async (req: Request, res: Response) => {
+    let { image_url } = req.query;
+    console.log(`got a request to process image at url:${image_url}`);
+    try {
+      let valid_image_url = await check_image_url(image_url)
+      let processed_image = await filterImageFromURL(valid_image_url)
+      res.status(200).sendFile(processed_image, ()=>{
+        deleteLocalFiles([processed_image])
+      })
+    } catch (e) {
+      res.status(422).send({message:`${e}`})
+    }
+      
+  });
   // Root Endpoint
   // Displays a simple message to the user
   app.get( "/", async ( req, res ) => {
