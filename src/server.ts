@@ -61,7 +61,7 @@ async function check_image_url(image_url:any) {
         deleteLocalFiles([processed_image])
       })
     } catch (e) {
-      res.status(400).send({message:`${e}`})
+      res.status(422).send({message:`${e}`})
     }
       
   });
