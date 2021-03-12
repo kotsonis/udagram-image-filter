@@ -4,9 +4,20 @@ import bodyParser from 'body-parser';
 import {filterImageFromURL, deleteLocalFiles} from './util/util';
 import { url } from 'inspector';
 import fetch from 'node-fetch'; 
+import { reject, resolve } from 'bluebird';
+import { checkServerIdentity } from 'tls';
 
-// import { config } from 'dotenv';
 
+// declare function to check if image_url is valid
+async function check_image_url(image_url:any) {
+    let response = await fetch(image_url, { method: 'HEAD' })
+    if (response.ok) {
+      return image_url
+    } else {
+      console.log(`tried ${image_url}, Got ${response.status}, ${response.statusText}`)
+      throw new Error(`Invalid image_url ${image_url}: ${response.status}, ${response.statusText}`);
+    }
+}
 
 // add for checking if provided url exists
 
@@ -40,34 +51,20 @@ import fetch from 'node-fetch';
   /**************************************************************************** */
 
   //! END @TODO1
-  app.get('/filteredimage', async(req: Request, res:Response) => {
+  app.get('/filteredimage', async (req: Request, res: Response) => {
     let { image_url } = req.query;
     console.log(`got a request to process image at url:${image_url}`);
-    // const exists = await urlExists(url_string);
-    
     try {
-      const response = await fetch(image_url, {method: 'HEAD'});
-      if (response.ok) { // got answer 200~300
-        filterImageFromURL(image_url)
-        .then((file_list) => {
-          console.log(`got back the following ${file_list}`)
-          res.status(200).sendFile(file_list)
-        })
-        .catch((error)=> {
-          res.status(400).send({ message: `Something went wrong with processing the image at ${image_url}` });
-        });
-      } else { // response was note from 200 till 300
-        console.log(`got response ${response.status}, ${response.statusText}`)
-        res.status(400).send({ message: `Image url not ok. Got ${response.status}, ${response.statusText}` });
-      }
-    } catch (error) {
-      return res.status(400).send({ message: `Error: Malformed image_url: ${image_url}` });
+      let valid_image_url = await check_image_url(image_url)
+      let processed_image = await filterImageFromURL(valid_image_url)
+      res.status(200).sendFile(processed_image, ()=>{
+        deleteLocalFiles([processed_image])
+      })
+    } catch (e) {
+      res.status(400).send({message:`${e}`})
     }
-
       
-    // console.log(`result of urlExists: ${exists}`);
-    
-});
+  });
   // Root Endpoint
   // Displays a simple message to the user
   app.get( "/", async ( req, res ) => {
