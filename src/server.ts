@@ -48,7 +48,6 @@ async function check_image_url(image_url:any) {
 
   /**************************************************************************** */
 
-  
   app.get('/filteredimage', async (req: Request, res: Response) => {
     let { image_url } = req.query;
     console.log(`got a request to process image at url:${image_url}`);
