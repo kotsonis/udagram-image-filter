@@ -1,14 +1,15 @@
-import express from 'express';
+import express, { Errback, NextFunction } from 'express';
 import { Router, Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import {filterImageFromURL, deleteLocalFiles} from './util/util';
 import { url } from 'inspector';
-import fetch from 'node-fetch'; 
 import { reject, resolve } from 'bluebird';
 import { checkServerIdentity } from 'tls';
 
 
 // declare function to check if image_url is valid
+import fetch from 'node-fetch'; 
+import { nextTick } from 'process';
 async function check_image_url(image_url:any) {
     let response = await fetch(image_url, { method: 'HEAD' })
     if (response.ok) {
@@ -48,20 +49,24 @@ async function check_image_url(image_url:any) {
 
   /**************************************************************************** */
 
-  app.get('/filteredimage', async (req: Request, res: Response) => {
+  
+  app.get('/filteredimage', async (req: Request, res: Response, next: NextFunction ) => {
     let { image_url } = req.query;
     console.log(`got a request to process image at url:${image_url}`);
     try {
       let valid_image_url = await check_image_url(image_url)
       let processed_image = await filterImageFromURL(valid_image_url)
-      res.status(200).sendFile(processed_image, ()=>{
-        deleteLocalFiles([processed_image])
+      res.status(200).sendFile(processed_image, (err:Errback)=>{
+        if (err) {
+          next(err);
+        } else {
+          deleteLocalFiles([processed_image])
+        }
       })
     } catch (e) {
       // catch any exceptions from check_image_url, filterImageFromURL, and deleteLocalFiles (amongst others)
       res.status(422).send({message:`${e}`})
-    }
-      
+    }  
   });
   //! END @TODO1
 
